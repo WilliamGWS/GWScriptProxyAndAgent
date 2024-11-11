@@ -186,7 +186,7 @@ function check_connectivity() {
 
   # Realizar la verificación de conectividad si nc está presente
   nc -zv $ZABBIX_SERVER_IP_1 10050 || { log "Error: No se puede conectar al puerto 10050"; exit 1; }
-  nc -zv $ZABBIX_SERVER_IP_2 10051 || { log "Error: No se puede conectar al puerto 10051"; exit 1; }
+  nc -zv $ZABBIX_SERVER_IP_1 10051 || { log "Error: No se puede conectar al puerto 10051"; exit 1; }
   log "Conectividad verificada."
 }
 
