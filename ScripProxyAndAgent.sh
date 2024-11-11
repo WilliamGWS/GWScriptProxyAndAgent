@@ -9,7 +9,7 @@ LOG_FILE="$HOME/script_logProxyAgent.txt"
 REQUIRED_OS_VERSION="22.04"
 
 #************** DATOS ZABBIX PROXY *******************
-ZABBIX_SERVER_IP="zabbix01.nubecentral.com:10051;zabbix02.nubecentral.com:10051"
+#ZABBIX_SERVER_IP="zabbix01.nubecentral.com:10051;zabbix02.nubecentral.com:10051"
 ZABBIX_SERVER_IP_1="zabbix01.nubecentral.com"
 ZABBIX_SERVER_IP_2="zabbix02.nubecentral.com"
 #VALIDACION DE LA VERSION DEL PROXY zabbix
@@ -347,7 +347,7 @@ Config_zabbix_proxy() {
   log "configuracion de Zabbix Proxy"
   log "=============================="
 
-  sed -i "s/^Server=.*/Server=$ZABBIX_SERVER_IP/" /etc/zabbix/zabbix_proxy.conf
+  sed -i "s/^Server=.*/Server=$ZABBIX_SERVER_IP_1,$ZABBIX_SERVER_IP_2/" /etc/zabbix/zabbix_proxy.conf
   sed -i "s/^Hostname=.*/Hostname=$HOSTNAME_PROXY/" /etc/zabbix/zabbix_proxy.conf
   sed -i "s/^DBName=.*/DBName=zabbix_proxy/" /etc/zabbix/zabbix_proxy.conf
   sed -i "s/^DBUser=.*/DBUser=zabbix/" /etc/zabbix/zabbix_proxy.conf
