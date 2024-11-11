@@ -9,8 +9,9 @@ LOG_FILE="/$HOME/script_logProxyAgent.txt"
 REQUIRED_OS_VERSION="22.04"
 
 #************** DATOS ZABBIX PROXY *******************
-#VALIDACION Y CONEXION AL SERVER zabbix
 ZABBIX_SERVER_IP="zabbix01.nubecentral.com:10051;zabbix02.nubecentral.com:10051"
+ZABBIX_SERVER_IP_1="zabbix01.nubecentral.com"
+ZABBIX_SERVER_IP_2="zabbix02.nubecentral.com"
 #VALIDACION DE LA VERSION DEL PROXY zabbix
 ZABBIX_PROXY_VERSION="6.0"
 
@@ -96,6 +97,7 @@ fi
 #************** DATOS ZABBIX PROXY *******************************************
 #VALIDACION DEL HOSTNAME DEL PROXY zabbix
 # Solicitar al usuario que ingrese un dato
+function Hostname_proxy (){
 echo "Ingrese el Numero de Oportunidad para la creacion del Proxyname:"
 read HOSTNAME_PROXY
 
@@ -106,9 +108,11 @@ if [ -z "$HOSTNAME_PROXY" ]; then
 else
     log "Has ingresado la siguiente Oportunidad: $HOSTNAME_PROXY para nombrar al Proxyname"
 fi
+}
 
 #************** ENCRIPTACION DE ZABBIX PROXY *******************************************
 # Generar una llave PSK de 32 bytes en formato hexadecimal
+function key_Psk(){
 PSK=$(openssl rand -hex 32)
 
 # Mostrar la llave PSK
@@ -116,6 +120,7 @@ log "La llave PSK generada es: $PSK"
 
 # Crear el archivo en /opt con el nombre encrypted.key
 echo "$PSK" > /opt/encrypted.key
+}
 
 #**********************************************************************************************************
 
@@ -163,7 +168,7 @@ function check_os_version() {
 # Función para verificar la conectividad a IP y puertos
 function check_connectivity() {
   log "=============================="
-  log "Verificando conectividad a $ZABBIX_SERVER_IP en puertos 10050 y 10051..."
+  log "Verificando conectividad a ZABBIX_SERVER_IP en puertos 10050 y 10051..."
   log "=============================="
   
   # Verificar si nc está instalado
@@ -180,8 +185,8 @@ function check_connectivity() {
 	fi
 
   # Realizar la verificación de conectividad si nc está presente
-  nc -zv $ZABBIX_SERVER_IP 10050 || { log "Error: No se puede conectar al puerto 10050"; exit 1; }
-  nc -zv $ZABBIX_SERVER_IP 10051 || { log "Error: No se puede conectar al puerto 10051"; exit 1; }
+  nc -zv $ZABBIX_SERVER_IP_1 10050 || { log "Error: No se puede conectar al puerto 10050"; exit 1; }
+  nc -zv $ZABBIX_SERVER_IP_2 10051 || { log "Error: No se puede conectar al puerto 10051"; exit 1; }
   log "Conectividad verificada."
 }
 
@@ -389,6 +394,8 @@ fi
 log
 BannerGWS
 check_root
+Hostname_proxy
+key_Psk
 check_os_version
 check_connectivity
 BannerZabbixAgent2
