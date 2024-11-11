@@ -83,14 +83,7 @@ fi
 HOSTNAME_AGENT=$hostname
 
 # OBTENER LA DIRECCIÓN IP ACTUAL DEL SISTEMA
-IP_ACTUAL=$(hostname -I | awk '{print $1}' 2>/dev/null)
-
-# COMPROBAR SI LA IP ES 127.0.0.1
-if [ "$IP_ACTUAL" == "127.0.0.1" ]; then
-    echo ""  # No se muestra nada si es 127.0.0.1
-else
-    echo "La dirección IP actual es: $IP_ACTUAL"
-fi
+IP_ACTUAL=$(ip route get 1 | awk '{print $(NF-2);exit}')
 
 #*****************************************************************************
 
