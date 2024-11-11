@@ -169,7 +169,7 @@ function check_connectivity() {
     log "nc no está instalado. Intentando instalar..."
 
     # Intentar instalar netcat usando apt
-    if sudo apt update && sudo apt install -y netcat; then
+    if  apt install -y netcat; then
       log "nc instalado correctamente."
     else
       log "Error: No se pudo instalar nc. Por favor, instálelo manualmente y ejecute el script de nuevo"
@@ -204,7 +204,7 @@ function Install_zabbix_agent() {
   log "=============================="
 
   if ! command -v wget >/dev/null; then
-    apt update && apt install -y wget
+     apt install -y wget
   fi
   
  #se agrego esta linea si el operador no actualizo preeviamente su servidor y solo ejecuto el script.
@@ -284,7 +284,7 @@ function Inst_mysql() {
     # Actualizar e instalar MySQL si no está instalado
     if ! dpkg -l | grep -q mysql-server; then
         log "MySQL NO ESTÁ INSTALADO, SE PROCEDERÁ A LA INSTALACIÓN"
-        apt update && apt install -y mysql-server || { log "Error al instalar mysql."; exit 1; }
+        apt apt install -y mysql-server || { log "Error al instalar mysql."; exit 1; }
     else
         log "MYSQL YA SE ENCUENTRA INSTALADO"
     fi
