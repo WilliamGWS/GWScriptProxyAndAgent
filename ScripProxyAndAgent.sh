@@ -18,8 +18,6 @@ ZABBIX_PROXY_VERSION="6.0"
 #UBICACION DE ARCHIVO DE CIFRADO
 ZABBIX_PROXY_PSK="/opt/encrypted.key"
 
-set -e  # Activar el modo de detener el script en caso de error
-
 # Banners y funciones de mensajes
 BannerGWS() {
   echo " 
