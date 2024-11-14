@@ -20,8 +20,7 @@ fi
 REQUIRED_OS_VERSION="22.04"
 
 #************** DATOS ZABBIX PROXY *******************
-#ZABBIX_SERVER_IP_1="zabbix01.nubecentral.com"
-ZABBIX_SERVER_IP_1="172.16.73.117"
+ZABBIX_SERVER_IP_1="zabbix01.nubecentral.com"
 ZABBIX_SERVER_IP_2="zabbix02.nubecentral.com"
 #VALIDACION DE LA VERSION DEL PROXY zabbix
 ZABBIX_PROXY_VERSION="6.0"
