@@ -3,25 +3,45 @@
 
 # VARIABLES DE CONFIGURACIÓN
 #VARIABLE PARA LA FUNCION LOG SE USO $HOME PARA QUE CUALQUIER USUARIO QUE EJECUTE EL ARCHIVO CREE UN ARCHIVO LOG EN SU DIRECTORIO Y NO TENER PROBLEMAS DE PERMISOS
-LOG_FILE="$HOME/script_logProxyAgent.txt" 
+LOG_FILE="$HOME/script_logProxyAgent.txt"
+
+
+# Ruta del archivo de marca
+flag_file="/var/tmp/mi_script_ejecutado.flag"
+
+# Comprobamos si el archivo de marca existe
+if [ -f "$flag_file" ]; then
+    echo "El script ya ha sido ejecutado anteriormente de forma exitosa. Por lo que no es necesaria ejecutar nuevamente este Script"
+    exit 0  # Sale sin hacer nada si el script ya se ejecutó
+fi
+
 
 #VARIABLE PARA LA VERIFICACION DE SO
 REQUIRED_OS_VERSION="22.04"
 
 #************** DATOS ZABBIX PROXY *******************
-#ZABBIX_SERVER_IP="zabbix01.nubecentral.com:10051;zabbix02.nubecentral.com:10051"
-ZABBIX_SERVER_IP_1="zabbix01.nubecentral.com"
+#ZABBIX_SERVER_IP_1="zabbix01.nubecentral.com"
+ZABBIX_SERVER_IP_1="172.16.73.117"
 ZABBIX_SERVER_IP_2="zabbix02.nubecentral.com"
 #VALIDACION DE LA VERSION DEL PROXY zabbix
 ZABBIX_PROXY_VERSION="6.0"
+
+#************** DATOS DATA BASE MYSQL *******************
+#SOLICITUD DE LA CONTRASEÑA AL USUARIO PARA LA CREACION O EL USO DE LA BASE DE DATOS MYSQL
+
+echo "Ingrese la contraseña segura para la creacion de la Base de Datos, si ya tiene instalado MySql ingrese la contraseña ya configurada"
+read Pass_BD
+
+DB_PASSWORD=$Pass_BD
+
 
 #UBICACION DE ARCHIVO DE CIFRADO
 ZABBIX_PROXY_PSK="/opt/encrypted.key"
 
 # Banners y funciones de mensajes
 BannerGWS() {
-  echo " 
-  
+  echo "
+
                                                                    ..........
                                                             ...::----------::..
                                                           ..:------------------:..
@@ -48,9 +68,9 @@ BannerGWS() {
             .:... ..... ........ :.....:....:.. ......    ..... .....      .:..::::::..:::::.
             .:... ....:  .:.::.. :.. .......:.. ......    ...:.  .:.     .:::.:..:.  .:......
             ..    .....  ......  :..........:.. ......    .....   .      ::...:....  ..:::::.
-                                                                         .::::.                
-  
-  
+                                                                         .::::.
+
+
   "
 }
 
@@ -61,6 +81,9 @@ log() {
   #echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" | tee -a "$LOG_FILE"
   echo -e "\n$(date '+%Y-%m-%d %H:%M:%S') - $message" | tee -a "$LOG_FILE"
 }
+
+# GUARDANDO CONTRASEÑA DE LA BD EN CASO DE QUE EL CLIENTE OLVIDE LA MISMA
+log "El password ingresado por el cliente es: $Pass_BD"
 
 #************** DATOS ZABBIX AGENTE *******************
 #VALIDACION DE LA VERSION DEL AGENTE2
@@ -115,12 +138,6 @@ echo "$PSK" > /opt/encrypted.key
 
 #**********************************************************************************************************
 
-#************** BASE DE DATOS ***********************
-#VARIABLES PARA INSTALACION DE MySQL
-DB_NAME="zabbix_proxy"
-DB_USER="zabbix"  # Usuario de MySQL (cámbialo si necesitas otro usuario)
-DB_PASSWORD="password"  # Contraseña del usuario
-#*****************************************************
 
 # FUNCION PARA VALIDAR QUE EL USUARIO TENGA PERMISOS ROOT
 function check_root() {
@@ -159,9 +176,9 @@ function check_os_version() {
 # Función para verificar la conectividad a IP y puertos
 function check_connectivity() {
   log "=============================="
-  log "Verificando conectividad a ZABBIX_SERVER_IP en puertos 10050 y 10051..."
+  log "Verificando conectividad a ZABBIX_SERVER_IP en el puerto 10050"
   log "=============================="
-  
+
   # Verificar si nc está instalado
   if ! command -v nc >/dev/null; then
     log "nc no está instalado. Intentando instalar..."
@@ -173,10 +190,9 @@ function check_connectivity() {
       log "Error: No se pudo instalar nc. Por favor, instálelo manualmente y ejecute el script de nuevo"
       exit 1
     fi
-	fi
+        fi
 
   # Realizar la verificación de conectividad si nc está presente
-#  nc -zv $ZABBIX_SERVER_IP_1 10050 || { log "Error: No se puede conectar al puerto 10050"; exit 1; }// no es necesario validar
   nc -zv $ZABBIX_SERVER_IP_1 10051 || { log "Error: No se puede conectar al puerto 10051"; exit 1; }
 #  nc -zv $ZABBIX_SERVER_IP_2 10051 || { log "Error: No se puede conectar al puerto 10051"; exit 1; }// el sever_2 no responde ni por ping parece inhabilitado
 
@@ -192,7 +208,7 @@ function BannerZabbixAgent2() {
   ##      ######    ##  ##   ##  ##    ##      ####             ######   ##  ###   ## #    ##  ###    ##      ##
  ##    #  ##  ##    ##  ##   ##  ##    ##     ##  ##            ##  ##    ##  ##   ##   #  ##   ##    ##     ##  ##
  #######  ##  ##   ######   ######    ####    ##  ##            ##  ##     #####  #######  ##   ##   ####    ######
-  
+
   "
 
 }
@@ -206,14 +222,18 @@ function Install_zabbix_agent() {
   if ! command -v wget >/dev/null; then
      apt install -y wget
   fi
-  
+
  #se agrego esta linea si el operador no actualizo preeviamente su servidor y solo ejecuto el script.
-  apt update 
+  apt update
   wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest+ubuntu22.04_all.deb
   dpkg -i zabbix-release_latest+ubuntu22.04_all.deb
-  apt update
+ # Eliminar el archivo .deb
+  rm -- "zabbix-release_latest+ubuntu22.04_all.deb"
   apt install -y zabbix-agent2 zabbix-agent2-plugin-* || { log "Error al instalar Zabbix Agent."; exit 1; }
-
+  
+ #realizando un backup del archivo zabbix_agent2.conf.bk
+  cp /etc/zabbix/zabbix_agent2.conf /etc/zabbix/zabbix_agent2.conf.bk
+ # modificando el archivo  zabbix_agent2.conf.bk
   sed -i "s/^Server=.*/Server=$IP_ACTUAL/" /etc/zabbix/zabbix_agent2.conf
   sed -i "s/^Hostname=.*/Hostname=$HOSTNAME_AGENT/" /etc/zabbix/zabbix_agent2.conf
   sed -i '/^ServerActive/ s/^/#/' /etc/zabbix/zabbix_agent2.conf
@@ -242,20 +262,28 @@ function BannerZabbixproxy() {
  ##    #  ##  ##    ##  ##   ##  ##    ##     ##  ##             ##       ##  ##  ##   ##  ##  ##     ##
  #######  ##  ##   ######   ######    ####    ##  ##            ####     #### ##   #####   ##  ##    ####
 
-  
+
   "
 
 }
 
-function Insta_Zabbix_Proxy(){
+function Install_Zabbix_Proxy(){
 
     log "=============================="
     log "Configuracion de ZABBIX PROXY"
     log "=============================="
-	
+
 apt install -y zabbix-proxy-mysql zabbix-sql-scripts || { log "Error al instalar Zabbix proxy."; exit 1; }
 }
 
+
+
+#************** BASE DE DATOS ***********************
+#VARIABLES PARA INSTALACION DE MySQL
+DB_NAME="zabbix_proxy"
+DB_USER="zabbix"  # Usuario de MySQL (cámbialo si necesitas otro usuario)
+
+#*****************************************************
 
 
 function BannerMysql() {
@@ -276,15 +304,15 @@ function BannerMysql() {
 
 # Función para instalar MySQL si no está instalado
 
-function Inst_mysql() {
+function Install_mysql() {
     log "=============================="
     log "Instalación de MySQL"
-	log "=============================="
+        log "=============================="
 
     # Actualizar e instalar MySQL si no está instalado
     if ! dpkg -l | grep -q mysql-server; then
         log "MySQL NO ESTÁ INSTALADO, SE PROCEDERÁ A LA INSTALACIÓN"
-        apt apt install -y mysql-server || { log "Error al instalar mysql."; exit 1; }
+        apt install -y mysql-server || { log "Error al instalar mysql."; exit 1; }
     else
         log "MYSQL YA SE ENCUENTRA INSTALADO"
     fi
@@ -294,9 +322,9 @@ function Inst_mysql() {
         log "La base de datos '$DB_NAME' ya existe. No es necesario crearla."
     else
         log "La base de datos '$DB_NAME' no existe. Procediendo a crearla..."
-		log "=============================="
-		log "Configuracion de User, Pass y BD"
-		log "=============================="
+                log "=============================="
+                log "Configuracion de User, Pass y BD"
+                log "=============================="
         mysql <<EOF
 CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';  # Cambia 'password' si es necesario
@@ -306,6 +334,11 @@ quit
 EOF
         log "La base de datos '$DB_NAME' se creó con éxito"
     fi
+	# VERIFICACION DE ERRORES EN OPERACIONES MYSQL
+	if ! mysql -u root -p -e "USE $DB_NAME;" >/dev/null 2>&1; then
+	log "Error al crear o acceder a la base de datos."
+	exit 1
+	fi
 }
 
 # Función para configurar la base de datos para Zabbix Proxy
@@ -326,7 +359,7 @@ function ZabbixBD() {
 # Banners y funciones de mensajes
 BannerConfZabbixProxy() {
   echo "
- 
+
     ####    #####   ##   ##  #######                    ######   ######    #####   ##  ##   ##  ##            #######    ##     ######   ######    ####    ##  ##
   ##  ##  ##   ##  ###  ##   ##   #                     ##  ##   ##  ##  ##   ##  ##  ##   ##  ##            #   ##    ####     ##  ##   ##  ##    ##     ##  ##
  ##       ##   ##  #### ##   ## #                       ##  ##   ##  ##  ##   ##   ####    ##  ##               ##    ##  ##    ##  ##   ##  ##    ##      ####
@@ -336,7 +369,7 @@ BannerConfZabbixProxy() {
    ####    #####   ##   ##  ####       ##              ####     #### ##   #####   ##  ##    ####             #######  ##  ##   ######   ######    ####    ##  ##
 
 
- 
+
   "
 }
 
@@ -346,8 +379,12 @@ Config_zabbix_proxy() {
   log "=============================="
   log "configuracion de Zabbix Proxy"
   log "=============================="
-
-  sed -i "s/^Server=.*/Server=$ZABBIX_SERVER_IP_1,$ZABBIX_SERVER_IP_2/" /etc/zabbix/zabbix_proxy.conf
+  
+ # realizando un backup del archivo zabbix_proxy.conf.bk
+  cp /etc/zabbix/zabbix_proxy.conf /etc/zabbix/zabbix_proxy.conf.bk
+  
+ # editando el archivo zabbix_proxy.conf
+  sed -i "s/^Server=.*/Server=$ZABBIX_SERVER_IP_1;$ZABBIX_SERVER_IP_2/" /etc/zabbix/zabbix_proxy.conf
   sed -i "s/^Hostname=.*/Hostname=$HOSTNAME_PROXY/" /etc/zabbix/zabbix_proxy.conf
   sed -i "s/^DBName=.*/DBName=zabbix_proxy/" /etc/zabbix/zabbix_proxy.conf
   sed -i "s/^DBUser=.*/DBUser=zabbix/" /etc/zabbix/zabbix_proxy.conf
@@ -394,14 +431,17 @@ check_connectivity
 BannerZabbixAgent2
 Install_zabbix_agent
 BannerZabbixproxy
-Insta_Zabbix_Proxy
+Install_Zabbix_Proxy
 BannerMysql
-Inst_mysql
+Install_mysql
 ZabbixBD
 BannerConfZabbixProxy
 Config_zabbix_proxy
 RecargaCache
 
-# Eliminar el script al finalizar
-rm -- "zabbix-release_latest+ubuntu22.04_all.deb"
-rm -- "$0"
+
+
+
+# Marca el archivo como ejecutado
+touch "$flag_file"
+log "El script se ha ejecutado con éxito y se ha marcado para no ejecutarse nuevamente."
