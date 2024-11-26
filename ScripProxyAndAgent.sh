@@ -226,6 +226,7 @@ function Install_zabbix_agent() {
   apt update
   wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest+ubuntu22.04_all.deb
   dpkg -i zabbix-release_latest+ubuntu22.04_all.deb
+  apt update
  # Eliminar el archivo .deb
   rm -- "zabbix-release_latest+ubuntu22.04_all.deb"
   apt install -y zabbix-agent2 zabbix-agent2-plugin-* || { log "Error al instalar Zabbix Agent."; exit 1; }
